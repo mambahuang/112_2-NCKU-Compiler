@@ -1,0 +1,8 @@
+> Create symbol table (scope level 0)
+func: check
+> Insert `check` (addr: -1) to scope level 0
+IDENT (name=endl, address=-1)
+/home/share/hw2/input/subtask09-function/testcase01.cpp:2:18: error:  syntax error
+     2 |    cout << s << endl 
+       |                 ^
+Total lines: 2

@@ -1,0 +1,22 @@
+> Create symbol table (scope level 0)
+func: main
+> Insert `main` (addr: -1) to scope level 0
+> Create symbol table (scope level 1)
+> Insert `argv` (addr: 0) to scope level 1
+STR_LIT "H"
+STR_LIT "e"
+STR_LIT "l"
+STR_LIT "l"
+STR_LIT "o"
+STR_LIT " "
+STR_LIT "w"
+STR_LIT "o"
+STR_LIT "r"
+STR_LIT "l"
+STR_LIT "d"
+STR_LIT "!"
+IDENT (name=endl, address=-1)
+INT_LIT 0
+RETURN
+
+Total lines: 5
