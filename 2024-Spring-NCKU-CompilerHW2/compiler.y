@@ -43,10 +43,10 @@
 /* Nonterminal with return, which need to sepcify type */
 /*%type <object_val> Expression Term Factor*/
 
+%left BAN BOR
 %left ADD SUB
 %left MUL DIV REM
-%left LOR LAN
-%left GTR LES EQL NEQ LEQ GEQ
+%left UMINUS
 
 /* Yacc will start at this nonterminal */
 %start Program
@@ -122,14 +122,21 @@ Stmt
 decStmt : VARIABLE_T IDENT VAL_ASSIGN expr {
             Insert_symbol($<var_type>1, $<s_var>2);
         }
-        | VARIABLE_T IDENT {
-            Insert_symbol($<var_type>1, $<s_var>2);
+        | VARIABLE_T variableList {
             tmp_obj = $<var_type>1;
         }
-        | ',' IDENT {
-            Insert_symbol(tmp_obj, $<s_var>2);
-        }
-        | decStmt decStmt
+;
+
+variableList : variable
+             | variableList ',' variable
+;
+
+variable : IDENT {
+            Insert_symbol(tmp_obj, $<s_var>1);
+         }
+         | IDENT VAL_ASSIGN expr {
+            Insert_symbol(tmp_obj, $<s_var>1);
+         }
 ;
 
 assginStmt : IDENT { modifyVariable($<s_var>1); } VAL_ASSIGN expr { printf("EQL_ASSIGN\n"); }
@@ -162,6 +169,11 @@ CoutParmListStmt
 
 expr    : expr ADD term { printf("ADD\n"); }
         | expr SUB term { printf("SUB\n"); }
+        | expr BAN term { printf("BAN\n"); }
+        | expr BOR term { printf("BOR\n"); }
+        | expr BXO term { printf("BXO\n"); }
+        | expr SHL term { printf("SHL\n"); }
+        | expr SHR term { printf("SHR\n"); }
         | term
 ;
 
@@ -169,13 +181,14 @@ term    : term MUL factor { printf("MUL\n"); }
         | term DIV factor { printf("DIV\n"); }
         | term REM factor { printf("REM\n"); }
         | factor
+
 ;
 
 factor  : INT_LIT { printf("INT_LIT %d\n", $<i_var>1); }
         | FLOAT_LIT { printf("FLOAT_LIT %f\n", $<f_var>1); }
         | STR_LIT { printf("STR_LIT \"%s\"\n", $<s_var>1); }
-        | '-' factor { printf("NEG\n"); }
         | '(' expr ')'
+        | '-' factor %prec UMINUS { printf("NEG\n"); }
         | '~' factor { printf("BNT\n"); }
         | IDENT {
             modifyVariable($<s_var>1);
