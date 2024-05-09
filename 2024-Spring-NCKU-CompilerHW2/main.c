@@ -86,7 +86,12 @@ Object* createVariable(ObjectType variableType, char* variableName, int variable
 }
 
 void modifyVariable(char* variableName) {
-    printf("IDENT (name=%s, address=%d)\n", variableName, address - 1);
+    NODE tmp = lookup_symbol(variableName, 0);
+    if (tmp.address == 404) {
+        printf("IDENT (name=%s, address=%d)\n", variableName, address - 1);
+    } else {
+        printf("IDENT (name=%s, address=%d)\n", variableName, tmp.address);
+    }
 }
 
 void pushFunParm(ObjectType variableType, char* variableName, int variableFlag) {
@@ -112,13 +117,15 @@ int Insert_symbol(ObjectType variableType, char* funcName) {
         printf("func: %s\n",funcName); 
         printf("> Insert `%s` (addr: %d) to scope level %d\n", funcName, -1, cs_idx); 
         table[cs_idx][table_len[cs_idx-1]].address = -1;
-        
+      //  if( check_newline == 1 ) printf("\n");
         return -1;
     }
     // else printf("> Insert `%s` (addr: %d) to scope level %d\n", funcName, address, cs_idx);
 
     if(tmp.address == 404) { // not found
         printf("> Insert `%s` (addr: %d) to scope level %d\n", funcName, address, cs_idx);
+        // if(strcmp(funcName, "argv") != 0)
+        //     printf("IDENT (name=%s, address=%d)\n", funcName, address);
         table[cs_idx][table_len[cs_idx]].address = address;
         table[cs_idx][table_len[cs_idx]].lineno = yylineno;
         strcpy(table[cs_idx][table_len[cs_idx]].name, funcName);

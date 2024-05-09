@@ -46,7 +46,8 @@
 %left BAN BOR
 %left ADD SUB
 %left MUL DIV REM
-%left UMINUS
+%right NOT BNT
+%right '^'
 
 /* Yacc will start at this nonterminal */
 %start Program
@@ -119,10 +120,11 @@ Stmt
     }
 ;
 
-decStmt : VARIABLE_T IDENT VAL_ASSIGN expr {
+decStmt : VARIABLE_T IDENT VAL_ASSIGN expr ';' {
+            printf("decStmt\n");
             Insert_symbol($<var_type>1, $<s_var>2);
         }
-        | VARIABLE_T variableList {
+        | VARIABLE_T variableList ';' {
             tmp_obj = $<var_type>1;
         }
 ;
@@ -139,16 +141,16 @@ variable : IDENT {
          }
 ;
 
-assginStmt : IDENT { modifyVariable($<s_var>1); } VAL_ASSIGN expr { printf("EQL_ASSIGN\n"); }
-           | IDENT { modifyVariable($<s_var>1); } ADD_ASSIGN expr { printf("ADD_ASSIGN\n"); }
-           | IDENT { modifyVariable($<s_var>1); } SUB_ASSIGN expr { printf("SUB_ASSIGN\n"); }
-           | IDENT { modifyVariable($<s_var>1); } MUL_ASSIGN expr { printf("MUL_ASSIGN\n"); }
-           | IDENT { modifyVariable($<s_var>1); } DIV_ASSIGN expr { printf("DIV_ASSIGN\n"); }
-           | IDENT { modifyVariable($<s_var>1); } REM_ASSIGN expr { printf("REM_ASSIGN\n"); }
-           | IDENT { modifyVariable($<s_var>1); } SHR_ASSIGN expr { printf("SHR_ASSIGN\n"); }
-           | IDENT { modifyVariable($<s_var>1); } SHL_ASSIGN expr { printf("SHL_ASSIGN\n"); }
-           | IDENT { modifyVariable($<s_var>1); } BOR_ASSIGN expr { printf("BOR_ASSIGN\n"); }
-           | IDENT { modifyVariable($<s_var>1); } BAN_ASSIGN expr { printf("BAN_ASSIGN\n"); }
+assginStmt : IDENT { modifyVariable($<s_var>1); } VAL_ASSIGN expr ';' { printf("EQL_ASSIGN\n"); }
+           | IDENT { modifyVariable($<s_var>1); } ADD_ASSIGN expr ';' { printf("ADD_ASSIGN\n"); }
+           | IDENT { modifyVariable($<s_var>1); } SUB_ASSIGN expr ';' { printf("SUB_ASSIGN\n"); }
+           | IDENT { modifyVariable($<s_var>1); } MUL_ASSIGN expr ';' { printf("MUL_ASSIGN\n"); }
+           | IDENT { modifyVariable($<s_var>1); } DIV_ASSIGN expr ';' { printf("DIV_ASSIGN\n"); }
+           | IDENT { modifyVariable($<s_var>1); } REM_ASSIGN expr ';' { printf("REM_ASSIGN\n"); }
+           | IDENT { modifyVariable($<s_var>1); } SHR_ASSIGN expr ';' { printf("SHR_ASSIGN\n"); }
+           | IDENT { modifyVariable($<s_var>1); } SHL_ASSIGN expr ';' { printf("SHL_ASSIGN\n"); }
+           | IDENT { modifyVariable($<s_var>1); } BOR_ASSIGN expr ';' { printf("BOR_ASSIGN\n"); }
+           | IDENT { modifyVariable($<s_var>1); } BAN_ASSIGN expr ';' { printf("BAN_ASSIGN\n"); }
 ;
 
 CoutParmListStmt
@@ -180,16 +182,17 @@ expr    : expr ADD term { printf("ADD\n"); }
 term    : term MUL factor { printf("MUL\n"); }
         | term DIV factor { printf("DIV\n"); }
         | term REM factor { printf("REM\n"); }
+        | NOT factor { printf("NOT\n"); }
+        | '-' factor %prec NOT { printf("NEG\n"); }
+        | '~' factor { printf("BNT\n"); }
         | factor
-
 ;
 
 factor  : INT_LIT { printf("INT_LIT %d\n", $<i_var>1); }
         | FLOAT_LIT { printf("FLOAT_LIT %f\n", $<f_var>1); }
         | STR_LIT { printf("STR_LIT \"%s\"\n", $<s_var>1); }
         | '(' expr ')'
-        | '-' factor %prec UMINUS { printf("NEG\n"); }
-        | '~' factor { printf("BNT\n"); }
+        | '(' VARIABLE_T ')' factor
         | IDENT {
             modifyVariable($<s_var>1);
             if(is_cout == 1){
@@ -214,7 +217,6 @@ comparison : expr GTR expr { printf("GTR\n"); }
 
 logical : logical LAN logical { printf("LAN\n"); }
         | logical LOR logical { printf("LOR\n"); }
-        | NOT factor { printf("NOT\n"); }
         | BOOL_LIT {
             if($<b_var>1)
                 printf("BOOL_LIT TRUE\n");
