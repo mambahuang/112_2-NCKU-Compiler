@@ -8,6 +8,12 @@
 
     int id_addr = -1;
     int is_cout = 0;
+    int int_flag = 0;
+    int float_flag = 0;
+    int string_flag = 0;
+    int bool_flag = 0;
+    char* tmp_var[10] = {};
+    int tmp_var_index = 0;
     ObjectType tmp_obj;
 
 %}
@@ -83,6 +89,7 @@ FunctionDefStmt
         dumpScope(); 
     }
 ;
+
 FunctionParameterStmtList 
     : FunctionParameterStmtList ',' FunctionParameterStmt
     | FunctionParameterStmt
@@ -113,6 +120,7 @@ Stmt
     }
     | decStmt
     | assginStmt
+    | ifStmt
     | RETURN expr ';' { printf("RETURN\n"); }
     | RETURN INT_LIT ';' { 
         printf("INT_LIT %d\n", $2);
@@ -121,23 +129,39 @@ Stmt
 ;
 
 decStmt : VARIABLE_T IDENT VAL_ASSIGN expr ';' {
-            printf("decStmt\n");
             Insert_symbol($<var_type>1, $<s_var>2);
         }
         | VARIABLE_T variableList ';' {
-            tmp_obj = $<var_type>1;
+            //tmp_obj = $<var_type>1;
+            for(int i=0; i<tmp_var_index; i++){
+                Insert_symbol($<var_type>1, tmp_var[i]);
+            }
+            tmp_var_index = 0;
         }
 ;
+
+ifStmt : IF { 
+            printf("IF\n");
+            pushScope();
+        } '(' expr ')' '{' Stmt '}' { dumpScope(); }
+       | IF {
+            printf("IF\n");
+            pushScope();
+        } '(' expr ')' '{' Stmt '}' ELSE '{' Stmt '}' { dumpScope(); }
 
 variableList : variable
              | variableList ',' variable
 ;
 
 variable : IDENT {
-            Insert_symbol(tmp_obj, $<s_var>1);
+            tmp_var[tmp_var_index] = $<s_var>1;
+            tmp_var_index++;
+            //Insert_symbol(tmp_obj, $<s_var>1);
          }
          | IDENT VAL_ASSIGN expr {
-            Insert_symbol(tmp_obj, $<s_var>1);
+            tmp_var[tmp_var_index] = $<s_var>1;
+            tmp_var_index++;
+            //Insert_symbol(tmp_obj, $<s_var>1);
          }
 ;
 
@@ -154,77 +178,123 @@ assginStmt : IDENT { modifyVariable($<s_var>1); } VAL_ASSIGN expr ';' { printf("
 ;
 
 CoutParmListStmt
-    : CoutParmListStmt SHL expr {
-        pushFunInParm(&$<object_val>3);
+    : CoutParmListStmt SHL { is_cout = 1; } expr {
+        int_flag = 0;
+        float_flag = 0;
+        string_flag = 0;
+        bool_flag = 0;
     }
-    | SHL { is_cout = 1; } expr CoutParmListStmt
-    | SHL STR_LIT {
-        printf("STR_LIT \"%s\"\n", $<s_var>2); 
-        coutStmt("string");
-    } CoutParmListStmt
-    | SHL IDENT {
-        printf("IDENT (name=%s, address=%d)\n", $<s_var>2, -1);
-        coutStmt("string");
+    | SHL { is_cout = 1; } expr { 
+        int_flag = 0;
+        float_flag = 0;
+        string_flag = 0;
+        bool_flag = 0; 
     }
-    |
 ;
 
-expr    : expr ADD term { printf("ADD\n"); }
-        | expr SUB term { printf("SUB\n"); }
-        | expr BAN term { printf("BAN\n"); }
-        | expr BOR term { printf("BOR\n"); }
-        | expr BXO term { printf("BXO\n"); }
-        | expr SHL term { printf("SHL\n"); }
-        | expr SHR term { printf("SHR\n"); }
+expr    : expr ADD expr { printf("ADD\n"); }
+        | expr SUB expr { printf("SUB\n"); }
+        | expr BAN expr { printf("BAN\n"); }
+        | expr BOR expr { printf("BOR\n"); }
+        | expr BXO expr { printf("BXO\n"); }
+        | expr LOR expr { printf("LOR\n"); }
+        | expr LAN expr { printf("LAN\n"); }
+        | expr GTR expr { printf("GTR\n"); }
+        | expr LEQ expr { printf("LEQ\n"); }
+        | expr LES expr { printf("LES\n"); }
+        | expr GEQ expr { printf("GEQ\n"); }
+        | expr NEQ expr { printf("NEQ\n"); }
+        | expr EQL expr { printf("EQL\n"); }
+        | expr SHR expr { printf("SHR\n"); }
         | term
 ;
 
-term    : term MUL factor { printf("MUL\n"); }
-        | term DIV factor { printf("DIV\n"); }
-        | term REM factor { printf("REM\n"); }
-        | NOT factor { printf("NOT\n"); }
-        | '-' factor %prec NOT { printf("NEG\n"); }
-        | '~' factor { printf("BNT\n"); }
-        | factor
+term : term MUL factor { printf("MUL\n"); }
+     | term DIV factor { printf("DIV\n"); }
+     | term REM factor { printf("REM\n"); }
+     | factor
 ;
 
-factor  : INT_LIT { printf("INT_LIT %d\n", $<i_var>1); }
-        | FLOAT_LIT { printf("FLOAT_LIT %f\n", $<f_var>1); }
-        | STR_LIT { printf("STR_LIT \"%s\"\n", $<s_var>1); }
+factor  : INT_LIT { 
+            printf("INT_LIT %d\n", $<i_var>1);
+            if(is_cout == 1 && int_flag == 0){
+                coutStmt("int");
+                int_flag = 1;
+            }
+        }
+        | FLOAT_LIT { 
+            printf("FLOAT_LIT %f\n", $<f_var>1);
+            if(is_cout == 1 && float_flag == 0){
+                coutStmt("float");
+                float_flag = 1;
+            }
+        }
+        | STR_LIT { 
+            printf("STR_LIT \"%s\"\n", $<s_var>1);
+            if(is_cout == 1 && string_flag == 0){
+                coutStmt("string");
+                string_flag = 1;
+            }
+        }
         | '(' expr ')'
-        | '(' VARIABLE_T ')' factor
+        | '(' VARIABLE_T ')' factor {
+            if($<var_type>2 == 0)
+                printf("Cast to undefined\n");
+            else if($<var_type>2 == 1)
+                printf("Cast to auto\n");
+            else if($<var_type>2 == 2)
+                printf("Cast to void\n");
+            else if($<var_type>2 == 3)
+                printf("Cast to char\n");
+            else if($<var_type>2 == 4)
+                printf("Cast to int\n");
+            else if($<var_type>2 == 5)
+                printf("Cast to long\n");
+            else if($<var_type>2 == 6)
+                printf("Cast to float\n");
+            else if($<var_type>2 == 7)
+                printf("Cast to double\n");
+            else if($<var_type>2 == 8)
+                printf("Cast to bool\n");
+            else if($<var_type>2 == 9)
+                printf("Cast to string\n");
+            else if($<var_type>2 == 10)
+                printf("Cast to function\n");
+        }
+        | SUB factor { printf("NEG\n"); }
+        | BNT factor { printf("BNT\n"); }
+        | NOT factor { printf("NOT\n"); }
         | IDENT {
-            modifyVariable($<s_var>1);
-            if(is_cout == 1){
-                NODE tmp_node;
-                tmp_node = lookup_symbol($<s_var>1, 0);
-                if(tmp_node.address != 404){
-                    coutStmt(tmp_node.type);
+            if(strcmp($<s_var>1, "endl") == 0){
+                printf("IDENT (name=%s, address=%d)\n", $<s_var>1, -1);
+                coutStmt("string");
+            } else {
+                modifyVariable($<s_var>1);
+                if(is_cout == 1){
+                    NODE tmp_node;
+                    tmp_node = lookup_symbol($<s_var>1, 0);
+                    if(tmp_node.address != 404){
+                        coutStmt(tmp_node.type);
+                    }
                 }
             }
             is_cout = 0;
         }
-        | comparison
-        | logical
-;
-
-comparison : expr GTR expr { printf("GTR\n"); }
-           | expr LEQ expr { printf("LEQ\n"); }
-           | expr LES expr { printf("LES\n"); }
-           | expr GEQ expr { printf("GEQ\n"); }
-           | expr NEQ expr { printf("NEQ\n"); }
-;
-
-logical : logical LAN logical { printf("LAN\n"); }
-        | logical LOR logical { printf("LOR\n"); }
         | BOOL_LIT {
             if($<b_var>1)
                 printf("BOOL_LIT TRUE\n");
             else
                 printf("BOOL_LIT FALSE\n");
+
+            if(is_cout == 1 && bool_flag == 0){
+                bool_flag = 1;
+                coutStmt("bool");
+            }
         }
+        
 ;
+
+
 
 %%
 /* C code section */
-
