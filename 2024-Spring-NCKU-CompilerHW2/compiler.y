@@ -57,7 +57,7 @@
 %type <object_val> Expression Factor 
 %type <object_val> singleExpr 
 %type <object_val> castingStmt
-
+%type <object_val> decStmt
 
 %right VAL_ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN REM_ASSIGN SHL_ASSIGN SHR_ASSIGN BAN_ASSIGN BXO_ASSIGN BOR_ASSIGN
 %left LOR
@@ -127,7 +127,10 @@ FunctionParameterStmt
 
 FunctionCallStmt : IDENT '(' Expression ')'
                  | IDENT '(' Factor ')'
-                 | IDENT '(' ElementList ')'
+                 | IDENT '(' ElementList ')' {
+                    modifyVariable($<s_var>1);
+                    printf("call: %s(IILjava/lang/String;B)B\n", $<s_var>1);
+                 }
 ;
 
 FunctionOp : FunctionCallStmt
@@ -153,6 +156,7 @@ Stmt
     | decStmt {
         printf("EQL_ASSIGN\n");
     }
+    | decStmtWithVal
     | ifStmt
     | castingStmt
     | whileStmt
@@ -223,15 +227,34 @@ decStmtList : VARIABLE_T decStmt ';' {
             }
 
 decStmt : decStmt ',' decStmt
-        | Factor VAL_ASSIGN FunctionCallStmt
+        | Factor VAL_ASSIGN FunctionCallStmt {
+            Insert_symbol($<object_val>1.type, $<object_val>1.symbol->name);
+        }
         | Factor VAL_ASSIGN Expression {
             Insert_symbol($<object_val>3.type, $<object_val>1.symbol->name);
         }
-        | IDENT {
-            tmp_var[tmp_var_index] = $<s_var>1;
+        | Factor {
+            $$ = $<object_val>1;
+            tmp_var[tmp_var_index] = $<object_val>1.symbol->name;
             tmp_var_index++;
 
         }
+;
+
+decStmtWithVal : VARIABLE_T Factor VAL_ASSIGN Expression ';' {
+                    if($<var_type>1 == 1){
+                        Insert_symbol($<object_val>4.type, $<object_val>2.symbol->name);
+                    }else{
+                        Insert_symbol($<var_type>1, $<object_val>2.symbol->name);
+                    }
+               }
+               | VARIABLE_T Factor VAL_ASSIGN FunctionCallStmt ';' {
+                    if($<var_type>1 == 1){
+                        Insert_symbol($<object_val>4.type, $<object_val>2.symbol->name);
+                    }else{
+                        Insert_symbol($<var_type>1, $<object_val>2.symbol->name);
+                    }
+               }
 ;
 
 ifStmt : ifHead '{' StmtList '}' { dumpScope(); }
@@ -317,6 +340,7 @@ ElementList : ElementList ',' Expression {
                 array_size += 1;
             }
             | IDENT ',' Expression {
+                printf("hello\n");
                 array_size += 2;
             }
             | Expression ',' Expression {
