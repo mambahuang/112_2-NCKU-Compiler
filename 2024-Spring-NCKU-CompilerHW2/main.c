@@ -156,6 +156,8 @@ int Insert_symbol(ObjectType variableType, char* funcName) {
         table_len[scopeLevel]++;
         address++;
     } else {
+        // printf("current type: %d\n", variableType);
+        // printf("tmp type: %s\n", objectTypeName[tmp.type]);
         if(variableType != tmp.type) {
             // printf("> Insert `%s` (addr: %d) to scope level %d\n", funcName, address, scopeLevel);
             // table[scopeLevel][table_len[scopeLevel]].symbol->addr = address;

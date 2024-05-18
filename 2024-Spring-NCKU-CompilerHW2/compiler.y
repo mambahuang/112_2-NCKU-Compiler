@@ -103,7 +103,9 @@ FunctionDefStmt
     : VARIABLE_T IDENT {
         ObjectType func = OBJECT_TYPE_FUNCTION;
         Insert_symbol(func, $<s_var>2); 
-    } '(' FunctionParameterStmtList ')' '{' StmtList '}' {
+    } '(' {
+        pushScope();
+    } FunctionParameterStmtList ')' '{' StmtList '}' {
         dumpScope(); 
     }
 ;
@@ -116,11 +118,9 @@ FunctionParameterStmtList
 
 FunctionParameterStmt
     : VARIABLE_T IDENT {
-        pushScope();
         Insert_symbol($<var_type>1, $<s_var>2); 
     }
     | VARIABLE_T IDENT '[' ']' {
-        pushScope();
         Insert_symbol($<var_type>1, $<s_var>2); 
     }
 ;
@@ -160,7 +160,7 @@ Stmt
     | arrayDecStmt
     | arrayAssignStmt
     | FunctionCallStmt ';'
-    | BREAK ';' { printf("BREAK"); }
+    | BREAK ';' { printf("BREAK\n"); }
     | RETURN Expression ';' { printf("RETURN\n"); }
     | RETURN ';' { printf("RETURN\n"); }
 ;
@@ -230,6 +230,7 @@ decStmt : decStmt ',' decStmt
         | IDENT {
             tmp_var[tmp_var_index] = $<s_var>1;
             tmp_var_index++;
+
         }
 ;
 
@@ -246,8 +247,9 @@ ifHead : IF Expression { printf("IF\n"); pushScope(); }
        | IF FunctionOp { printf("IF\n"); pushScope(); } 
 ;
 
-castingStmt : '(' VARIABLE_T ')' Expression {
+castingStmt : '(' VARIABLE_T ')' Expression %prec NOT {
                 $$ = $<object_val>4;
+                $$.type = $<var_type>2;
                 if($<var_type>2 == 0){
                     printf("Cast to undefined\n");
                 } else if($<var_type>2 == 1)
@@ -337,7 +339,13 @@ arrayStmt : arrayStmt '[' Expression ']' {
           }
 ;
 
-Expression  : Expression ADD Expression { 
+Expression  : castingStmt {
+                $$ = $<object_val>1;
+            }
+            | singleExpr { 
+                $$ = $<object_val>1;
+            }
+            | Expression ADD Expression { 
                 printf("ADD\n");
                 $$ = $<object_val>1;
             }
@@ -456,12 +464,6 @@ Expression  : Expression ADD Expression {
                 printf("DEC_ASSIGN\n");
             }
             | '(' Expression ')' { $$ = $<object_val>2; }
-            | castingStmt {
-                $$ = $<object_val>1;
-            }
-            | singleExpr { 
-                $$ = $<object_val>1;
-            }
 ;
 
 singleExpr : SUB Factor { 
@@ -515,9 +517,11 @@ Factor  : INT_LIT {
             $$.type = OBJECT_TYPE_BOOL;
         }
         | IDENT {
+            Object tmp = lookup_symbol($<s_var>1, 0);
             $$.symbol = (SymbolData*)malloc(sizeof(SymbolData));
             $$.symbol->name = (char*)malloc(sizeof(char)*50);
             strcpy($$.symbol->name, $<s_var>1);
+            $$.type = tmp.type;
             modifyVariable($<s_var>1);
         }
 ;
