@@ -13,14 +13,16 @@ int yylex_destroy();
 #define VAR_FLAG_POINTER 0b00000010
 
 void pushScope();
+void pushSameScope();
 void dumpScope();
+void dumpSameScope();
 
 void pushFunParm(ObjectType variableType, char* variableName, int parmFlag);
 void createFunction(ObjectType variableType, char* funcName);
 void create_symbol();
 int Insert_symbol(ObjectType variableType, char* funcName);
 void modifyVariable(char* variableName);
-NODE lookup_symbol(char* name, int flag);
+Object lookup_symbol(char* name, int flag);
 void coutStmt(char* var_type);
 void pushFunInParm(Object* b);
 

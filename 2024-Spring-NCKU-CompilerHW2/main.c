@@ -29,68 +29,96 @@ int cout_num = 0;
 int variableAddress = -1;
 ObjectType variableIdentType;
 
-int table_len[50] = {}; 
-NODE table[50][50];
+int table_len[50] = {0}; 
+Object table[50][50];
 int address = 0;
 char* str_cout[50] = {};
-// int type = 0;
-// char now_type[10] = "none";
-// char now_op[10] = "none";
-// char now_id[10] = "none";
-// NODE *global_node , node_saving;
-
-// char variable_name[20] = {};
-// int variable_address = 0;
-// int block_create = 0;
-// bool func_first = 1;
 
 void pushScope() {
-    cs_idx++;
-    // scopeLevel++;
-    printf("> Create symbol table (scope level %d)\n", cs_idx);
+    scopeLevel++;
+    printf("> Create symbol table (scope level %d)\n", scopeLevel);
+    table[scopeLevel][table_len[scopeLevel]].symbol = (SymbolData*)malloc(sizeof(SymbolData));
+    table[scopeLevel][table_len[scopeLevel]].symbol->name = (char*)malloc(sizeof(char)*50);
+    table[scopeLevel][table_len[scopeLevel]].symbol->index = 0;
+    table[scopeLevel][table_len[scopeLevel]].symbol->addr = 0;
+    table[scopeLevel][table_len[scopeLevel]].symbol->lineno = 0;
+    table[scopeLevel][table_len[scopeLevel]].symbol->func_sig = (char*)malloc(sizeof(char)*50);
+    table[scopeLevel][table_len[scopeLevel]].symbol->func_var = 0;
+}
+
+void pushSameScope() {
+    printf("> Create symbol table (scope level %d)\n", scopeLevel);
+    table[scopeLevel][table_len[scopeLevel]].symbol = (SymbolData*)malloc(sizeof(SymbolData));
+    table[scopeLevel][table_len[scopeLevel]].symbol->name = (char*)malloc(sizeof(char)*50);
+    table[scopeLevel][table_len[scopeLevel]].symbol->index = 0;
+    table[scopeLevel][table_len[scopeLevel]].symbol->addr = 0;
+    table[scopeLevel][table_len[scopeLevel]].symbol->lineno = 0;
+    table[scopeLevel][table_len[scopeLevel]].symbol->func_sig = (char*)malloc(sizeof(char)*50);
+    table[scopeLevel][table_len[scopeLevel]].symbol->func_var = 0;
 }
 
 void dumpScope() {
-    // printf("> Dump symbol table (scope level: %d)\n", scope) , f = 1;
-    printf("\n> Dump symbol table (scope level: %d)\n", cs_idx);
-
+    printf("\n> Dump symbol table (scope level: %d)\n", scopeLevel);
 
     printf("%-10s%-20s%-10s%-10s%-10s%-10s\n",
            "Index", "Name" , "Type", "Addr", "Lineno", "Func_sig");
-    for(int i=0; i<table_len[cs_idx]; ++i){
+    for(int i=0; i<table_len[scopeLevel]; ++i){
         
         int mut = 0;
 
-        if( strcmp(table[cs_idx][i].type,"function") == 0 ) mut = -1;
+        if( table[scopeLevel][i].type == OBJECT_TYPE_FUNCTION ) mut = -1;
 
         if( mut == -1 )
         {
-            printf("%-10d%-20s%-10s%-10d%-10d%-10s\n",
-            i, table[cs_idx][i].name, table[cs_idx][i].type, table[cs_idx][i].address, table[cs_idx][i].lineno, "([Ljava/lang/String;)I");
+            printf("%-10d%-20s%-10s%-10ld%-10d%-10s\n",
+            i, table[scopeLevel][i].symbol->name, objectTypeName[table[scopeLevel][i].type], table[scopeLevel][i].symbol->addr, table[scopeLevel][i].symbol->lineno, "([Ljava/lang/String;)I");
         }     
         else 
         {
-            printf("%-10d%-20s%-10s%-10d%-10d%-10s\n",
-            i, table[cs_idx][i].name, table[cs_idx][i].type, table[cs_idx][i].address, table[cs_idx][i].lineno, "-");
+            printf("%-10d%-20s%-10s%-10ld%-10d%-10s\n",
+            i, table[scopeLevel][i].symbol->name, objectTypeName[table[scopeLevel][i].type], table[scopeLevel][i].symbol->addr, table[scopeLevel][i].symbol->lineno, "-");
         } 
     }
-    table_len[cs_idx] = 0;
-    cs_idx--;
+    table_len[scopeLevel] = 0;
+    scopeLevel--;
+}
+
+void dumpSameScope() {
+    printf("\n> Dump symbol table (scope level: %d)\n", scopeLevel);
+
+    printf("%-10s%-20s%-10s%-10s%-10s%-10s\n",
+           "Index", "Name" , "Type", "Addr", "Lineno", "Func_sig");
+    for(int i=0; i<table_len[scopeLevel]; ++i){
+        
+        int mut = 0;
+
+        if( table[scopeLevel][i].type == OBJECT_TYPE_FUNCTION ) mut = -1;
+
+        if( mut == -1 )
+        {
+            printf("%-10d%-20s%-10s%-10ld%-10d%-10s\n",
+            i, table[scopeLevel][i].symbol->name, objectTypeName[table[scopeLevel][i].type], table[scopeLevel][i].symbol->addr, table[scopeLevel][i].symbol->lineno, "([Ljava/lang/String;)I");
+        }     
+        else 
+        {
+            printf("%-10d%-20s%-10s%-10ld%-10d%-10s\n",
+            i, table[scopeLevel][i].symbol->name, objectTypeName[table[scopeLevel][i].type], table[scopeLevel][i].symbol->addr, table[scopeLevel][i].symbol->lineno, "-");
+        } 
+    }
+    table_len[scopeLevel] = 0;
 }
 
 Object* createVariable(ObjectType variableType, char* variableName, int variableFlag) {
-    // printf("> Insert `%s` (addr: %d) to scope level %d\n", variableName, address, cs_idx);
+    // printf("> Insert `%s` (addr: %d) to scope level %d\n", variableName, address, scopeLevel);
     // printf("variable type: %s\n", objectTypeName[variableType]); -> type: int
     // address++;
     return NULL;
 }
 
 void modifyVariable(char* variableName) {
-    NODE tmp = lookup_symbol(variableName, 0);
-    if (tmp.address == 404) {
-        printf("IDENT (name=%s, address=%d)\n", variableName, address - 1);
-    } else {
-        printf("IDENT (name=%s, address=%d)\n", variableName, tmp.address);
+    Object tmp = lookup_symbol(variableName, 0);
+    if (tmp.symbol->addr != 404) {
+        printf("IDENT (name=%s, address=%ld)\n", variableName, tmp.symbol->addr);
     }
 }
 
@@ -103,54 +131,56 @@ void createFunction(ObjectType variableType, char* funcName) {
 }
 
 int Insert_symbol(ObjectType variableType, char* funcName) {
-    NODE tmp = lookup_symbol(funcName, 0);
-    
-    if( strcmp(objectTypeName[variableType],"function") == 0 )
+    Object tmp = lookup_symbol(funcName, 0);
+
+    if( variableType == OBJECT_TYPE_FUNCTION )
     {
-        table[cs_idx][table_len[cs_idx]].address = address;
-        table[cs_idx][table_len[cs_idx]].lineno = yylineno;
-        strcpy(table[cs_idx][table_len[cs_idx]].name, funcName);
-        strcpy(table[cs_idx][table_len[cs_idx]].type, objectTypeName[variableType]);
-        // if( strcmp(element_type,"1") == 0 ) table[cs_idx][table_len[cs_idx]].mut = 1;
-        // strcpy(table[cs_idx][table_len[cs_idx]].element_type, element_type);
-        table_len[cs_idx]++;
+        table[scopeLevel][table_len[scopeLevel]].symbol->addr = address;
+        table[scopeLevel][table_len[scopeLevel]].symbol->lineno = yylineno;
+        strcpy(table[scopeLevel][table_len[scopeLevel]].symbol->name, funcName);
+        table[scopeLevel][table_len[scopeLevel]].type = variableType;
+        strcpy(table[scopeLevel][table_len[scopeLevel]].symbol->func_sig, "([Ljava/lang/String;)I");
+        table_len[scopeLevel]++;
         printf("func: %s\n",funcName); 
-        printf("> Insert `%s` (addr: %d) to scope level %d\n", funcName, -1, cs_idx); 
-        table[cs_idx][table_len[cs_idx-1]].address = -1;
-      //  if( check_newline == 1 ) printf("\n");
+        printf("> Insert `%s` (addr: %d) to scope level %d\n", funcName, -1, scopeLevel); 
+        table[scopeLevel][table_len[scopeLevel-1]].symbol->addr = -1;
         return -1;
     }
-    // else printf("> Insert `%s` (addr: %d) to scope level %d\n", funcName, address, cs_idx);
 
-    if(tmp.address == 404) { // not found
-        printf("> Insert `%s` (addr: %d) to scope level %d\n", funcName, address, cs_idx);
-        // if(strcmp(funcName, "argv") != 0)
-        //     printf("IDENT (name=%s, address=%d)\n", funcName, address);
-        table[cs_idx][table_len[cs_idx]].address = address;
-        table[cs_idx][table_len[cs_idx]].lineno = yylineno;
-        strcpy(table[cs_idx][table_len[cs_idx]].name, funcName);
-        strcpy(table[cs_idx][table_len[cs_idx]].type, objectTypeName[variableType]);
-        // if( strcmp(element_type,"1") == 0 ) table[cs_idx][table_len[cs_idx]].mut = 1;
-        // strcpy(table[cs_idx][table_len[cs_idx]].element_type, element_type);
-        table_len[cs_idx]++;
+    if(tmp.symbol->addr == 404) { // not found
+        printf("> Insert `%s` (addr: %d) to scope level %d\n", funcName, address, scopeLevel);
+        table[scopeLevel][table_len[scopeLevel]].symbol->addr = address;
+        table[scopeLevel][table_len[scopeLevel]].symbol->lineno = yylineno;
+        strcpy(table[scopeLevel][table_len[scopeLevel]].symbol->name, funcName);
+        table[scopeLevel][table_len[scopeLevel]].type = variableType;
+        table_len[scopeLevel]++;
         address++;
+    } else {
+        if(variableType != tmp.type) {
+            // printf("> Insert `%s` (addr: %d) to scope level %d\n", funcName, address, scopeLevel);
+            // table[scopeLevel][table_len[scopeLevel]].symbol->addr = address;
+            // table[scopeLevel][table_len[scopeLevel]].symbol->lineno = yylineno;
+            // strcpy(table[scopeLevel][table_len[scopeLevel]].symbol->name, funcName);
+            // table[scopeLevel][table_len[scopeLevel]].type = variableType;
+            // table_len[scopeLevel]++;
+            // address++;
+        }
     }
-
-    // if( strcmp(objectTypeName[variableType],"function") != 0 ) address++;
 
     return address - 1;
 }
 
-NODE lookup_symbol(char* name, int flag) {
+Object lookup_symbol(char* name, int flag) {
 
-    for(int i=cs_idx; i>=0; --i){
+    for(int i=scopeLevel; i>=0; --i){
         for(int j=0; j<table_len[i]; ++j){
-            if(0 == strcmp(table[i][j].name, name))
+            if(0 == strcmp(table[i][j].symbol->name, name))
                 return table[i][j];
         }
     }
-    NODE node;
-    node.address = 404; // 404 not found
+    Object node = (Object){.type = OBJECT_TYPE_UNDEFINED, .value = 0, .symbol = (SymbolData*)malloc(sizeof(SymbolData))};
+    node.symbol->addr = 404; // 404 not found
+    node.symbol->lineno = yylineno;
     return node;
 }
 
@@ -214,16 +244,27 @@ void coutStmt(char* var_type) {
     cout_num++;
 }
 
-void stdoutPrint() {
-    for (int i = 0; i < cout_num; i++)
-    {
-        if( i == cout_num - 1 ) printf("%s\n", str_cout[i]);
-        else printf("%s ", str_cout[i]);
+void stdoutPrint(ObjectType* cout_str, int cout_num) {
+    printf("cout");
+    for(int i=0; i<cout_num; ++i){
+        printf(" %s", objectTypeName[cout_str[i]]);
     }
-    cout_num = 0;
+    printf("\n");
 }
 
 int main(int argc, char* argv[]) {
+    // Initialize
+    for(int i=0; i<50; ++i){
+        table_len[i] = 0;
+    }
+    for (int i = 0; i < 50; i++){
+        for(int j=0; j<50; ++j){
+            table[i][j].symbol = (SymbolData*)malloc(sizeof(SymbolData));
+            table[i][j].symbol->name = (char*)malloc(sizeof(char)*50);
+            table[i][j].symbol->func_sig = (char*)malloc(sizeof(char)*50);
+        }
+    }
+    
     if (argc == 2) {
         yyin = fopen(yyInputFileName = argv[1], "r");
     } else {
