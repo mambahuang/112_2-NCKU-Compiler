@@ -1,9 +1,0 @@
-> Create symbol table (scope level 0)
-func: main
-> Insert `main` (addr: -1) to scope level 0
-> Create symbol table (scope level 1)
-> Insert `argv` (addr: 0) to scope level 1
-/home/share/hw2/input/subtask03-precedenc/testcase02.cpp:2:28: error:  syntax error
-     2 |    cout << ( 3 - 4 * (5 + - ) - 10 / 7) << endl;
-       |                           ^
-Total lines: 2
