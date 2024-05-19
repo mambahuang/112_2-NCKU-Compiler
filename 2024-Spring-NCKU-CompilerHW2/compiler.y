@@ -28,7 +28,7 @@
     char func_sig_list[50][50];
     int func_sig_index = 0;
     char func_sig_none[10][50] = {"-"};
-
+    char call_func_name[50][50];
 %}
 
 /* Variable or self-defined structure */
@@ -127,7 +127,7 @@ FunctionDefStmt
         }else if($<var_type>1 == 2){
             strcat(function_sig, ")V");
         }
-        //printf("%s\n", function_sig);
+        strcpy(call_func_name[func_sig_index], $<s_var>2);
     } ')' '{' StmtList '}' {
         dumpScope(func_sig_list);
     }
@@ -162,17 +162,32 @@ FunctionParameterStmt
 
 FunctionCallStmt : IDENT '(' Expression ')' {
                     modifyVariable($<s_var>1);
-                    printf("call: %s(Ljava/lang/String;)V\n", $<s_var>1);
+                    for(int i=0; i<func_sig_index; i++){
+                        if(strcmp($<s_var>1, call_func_name[i]) == 0){
+                            printf("call: %s%s\n", $<s_var>1, func_sig_list[i]);
+                            break;
+                        }
+                    }
                     modifyVariable($<object_val>3.symbol->name);
                  }
                  | IDENT '(' Factor ')' {
                     modifyVariable($<s_var>1);
-                    printf("call: %s(Ljava/lang/String;)V\n", $<s_var>1);
+                    for(int i=0; i<func_sig_index; i++){
+                        if(strcmp($<s_var>1, call_func_name[i]) == 0){
+                            printf("call: %s%s\n", $<s_var>1, func_sig_list[i]);
+                            break;
+                        }
+                    }
                     modifyVariable($<object_val>3.symbol->name);
                  }
                  | IDENT '(' ElementList ')' {
                     modifyVariable($<s_var>1);
-                    printf("call: %s(IILjava/lang/String;B)B\n", $<s_var>1);
+                    for(int i=0; i<func_sig_index; i++){
+                        if(strcmp($<s_var>1, call_func_name[i]) == 0){
+                            printf("call: %s%s\n", $<s_var>1, func_sig_list[i]);
+                            break;
+                        }
+                    }
                  }
 ;
 
@@ -205,6 +220,7 @@ Stmt
     }
     | decStmtWithVal
     | ifStmt
+    | ifHead
     | castingStmt
     | whileStmt
     | forStmt
@@ -320,8 +336,12 @@ ifElseStmt : ifHead '{' StmtList '}' ELSE { dumpSameScope(); printf("ELSE\n"); p
            | ifHead StmtList ELSE { dumpSameScope(); printf("ELSE\n"); pushSameScope(); }
 ;
 
-ifHead : IF Expression { printf("IF\n"); pushScope(); } 
+ifHead : ifHead2 { pushScope(); } 
        | IF FunctionOp { printf("IF\n"); pushScope(); }
+       | ifHead2 StmtList
+;
+
+ifHead2 : IF Expression { printf("IF\n"); }
 ;
 
 castingStmt : '(' VARIABLE_T ')' Expression %prec NOT {
