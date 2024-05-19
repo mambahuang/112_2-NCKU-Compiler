@@ -7,15 +7,8 @@
 
     int yydebug = 1;
 
-    int id_addr = -1;
-    int is_cout = 0;
-    int int_flag = 0;
-    int float_flag = 0;
-    int string_flag = 0;
-    int bool_flag = 0;
     char* tmp_var[10] = {};
     int tmp_var_index = 0;
-    ObjectType tmp_obj;
 
     ObjectType tmp_cout[100];
     int tmp_cout_index = 0;
@@ -195,8 +188,53 @@ FunctionOp : FunctionCallStmt
            | FunctionOp REM Expression {
                 printf("REM\n");
            }
-           | FunctionOp EQL Expression{
+           | FunctionOp EQL Expression {
                 printf("EQL\n");
+           }
+           | FunctionOp ADD Expression { 
+                printf("ADD\n");
+           }
+           | FunctionOp SUB Expression {
+                printf("SUB\n");
+           }
+           | FunctionOp BAN Expression { 
+                printf("BAN\n");
+           }
+           | FunctionOp BOR Expression { 
+                printf("BOR\n");
+           }
+           | FunctionOp BXO Expression { 
+                printf("BXO\n");
+           }
+           | FunctionOp LOR Expression {
+                printf("LOR\n");
+           }
+           | FunctionOp LAN Expression {
+                printf("LAN\n");
+           }
+           | FunctionOp GTR Expression {
+                printf("GTR\n");
+           }
+           | FunctionOp LEQ Expression {
+                printf("LEQ\n");
+           }
+           | FunctionOp LES Expression {
+                printf("LES\n");
+           }
+           | FunctionOp GEQ Expression {
+                printf("GEQ\n");
+           }
+           | FunctionOp NEQ Expression {
+                printf("NEQ\n");
+           }
+           | FunctionOp SHR Expression { 
+                printf("SHR\n");
+           }
+           | FunctionOp MUL Expression {
+                printf("MUL\n");
+           }
+           | FunctionOp DIV Expression {
+                printf("DIV\n");
            }
            | '(' FunctionOp ')'
 ;

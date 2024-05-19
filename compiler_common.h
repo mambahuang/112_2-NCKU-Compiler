@@ -33,15 +33,6 @@ typedef struct _object {
     SymbolData* symbol;
 } Object;
 
-typedef struct Node {
-    char name[50];
-    char type[50];
-    int address;
-    int lineno;
-    // int mut;
-    char element_type[50];
-} NODE;
-
 extern int yylineno;
 extern int funcLineNo;
 
