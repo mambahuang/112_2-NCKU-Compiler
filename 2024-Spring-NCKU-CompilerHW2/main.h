@@ -14,7 +14,7 @@ int yylex_destroy();
 
 void pushScope();
 void pushSameScope();
-void dumpScope();
+void dumpScope(char functionSig[][50]);
 void dumpSameScope();
 
 void pushFunParm(ObjectType variableType, char* variableName, int parmFlag);

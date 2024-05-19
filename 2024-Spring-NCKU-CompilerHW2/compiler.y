@@ -3,6 +3,7 @@
     #include "compiler_common.h"
     #include "compiler_util.h"
     #include "main.h"
+    #include <stdlib.h>
 
     int yydebug = 1;
 
@@ -22,6 +23,11 @@
 
     int array_size = 0;
     char* array_name = "";
+
+    char function_sig[50] = "(";
+    char func_sig_list[50][50];
+    int func_sig_index = 0;
+    char func_sig_none[10][50] = {"-"};
 
 %}
 
@@ -80,18 +86,26 @@
 /* Grammar section */
 
 Program
-    : { pushScope(); } GlobalStmtList { dumpScope(); }
+    : { pushScope(); } GlobalStmtList { 
+        dumpScope(func_sig_list);
+        strcpy(function_sig, "(");
+        func_sig_index = 0;
+    }
     | /* Empty file */
 ;
 
 GlobalStmtList 
-    : GlobalStmtList GlobalStmt
+    : GlobalStmtList {
+        strcpy(function_sig, "(");
+    } GlobalStmt
     | GlobalStmt
-;
 
 GlobalStmt
     : DefineVariableStmt
-    | FunctionDefStmt
+    | FunctionDefStmt {
+        strcpy(func_sig_list[func_sig_index], function_sig);
+        func_sig_index++;
+    }
 ;
 
 DefineVariableStmt
@@ -103,10 +117,19 @@ FunctionDefStmt
     : VARIABLE_T IDENT {
         ObjectType func = OBJECT_TYPE_FUNCTION;
         Insert_symbol(func, $<s_var>2); 
-    } '(' {
-        pushScope();
-    } FunctionParameterStmtList ')' '{' StmtList '}' {
-        dumpScope(); 
+    } '(' { pushScope(); } FunctionParameterStmtList  {
+        if($<var_type>1 == OBJECT_TYPE_INT){
+            strcat(function_sig, ")I");
+        }else if($<var_type>1 == OBJECT_TYPE_STR){
+            strcat(function_sig, ")Ljava/lang/String;");
+        }else if($<var_type>1 == OBJECT_TYPE_BOOL){
+            strcat(function_sig, ")B");
+        }else if($<var_type>1 == 2){
+            strcat(function_sig, ")V");
+        }
+        //printf("%s\n", function_sig);
+    } ')' '{' StmtList '}' {
+        dumpScope(func_sig_list);
     }
 ;
 
@@ -118,15 +141,35 @@ FunctionParameterStmtList
 
 FunctionParameterStmt
     : VARIABLE_T IDENT {
-        Insert_symbol($<var_type>1, $<s_var>2); 
+        Insert_symbol($<var_type>1, $<s_var>2);
+        if($<var_type>1 == OBJECT_TYPE_INT){
+            strcat(function_sig, "I");
+        }else if($<var_type>1 == OBJECT_TYPE_STR){
+            strcat(function_sig, "Ljava/lang/String;");
+        }else if($<var_type>1 == OBJECT_TYPE_BOOL){
+            strcat(function_sig, "B");
+        }else if($<var_type>1 == 2){
+            strcat(function_sig, "V");
+        }
     }
     | VARIABLE_T IDENT '[' ']' {
-        Insert_symbol($<var_type>1, $<s_var>2); 
+        Insert_symbol($<var_type>1, $<s_var>2);
+        if($<var_type>1 == OBJECT_TYPE_STR){
+            strcat(function_sig, "[Ljava/lang/String;");
+        }
     }
 ;
 
-FunctionCallStmt : IDENT '(' Expression ')'
-                 | IDENT '(' Factor ')'
+FunctionCallStmt : IDENT '(' Expression ')' {
+                    modifyVariable($<s_var>1);
+                    printf("call: %s(Ljava/lang/String;)V\n", $<s_var>1);
+                    modifyVariable($<object_val>3.symbol->name);
+                 }
+                 | IDENT '(' Factor ')' {
+                    modifyVariable($<s_var>1);
+                    printf("call: %s(Ljava/lang/String;)V\n", $<s_var>1);
+                    modifyVariable($<object_val>3.symbol->name);
+                 }
                  | IDENT '(' ElementList ')' {
                     modifyVariable($<s_var>1);
                     printf("call: %s(IILjava/lang/String;B)B\n", $<s_var>1);
@@ -134,8 +177,12 @@ FunctionCallStmt : IDENT '(' Expression ')'
 ;
 
 FunctionOp : FunctionCallStmt
-           | FunctionOp REM Expression
-           | FunctionOp EQL Expression
+           | FunctionOp REM Expression {
+                printf("REM\n");
+           }
+           | FunctionOp EQL Expression{
+                printf("EQL\n");
+           }
            | '(' FunctionOp ')'
 ;
 
@@ -180,7 +227,10 @@ CoutParmListStmt
         tmp_cout[tmp_cout_index] = tmp.type;
         tmp_cout_index++;
     }
-    | CoutParmListStmt SHL FunctionCallStmt
+    | CoutParmListStmt SHL FunctionCallStmt {
+        tmp_cout[tmp_cout_index] = OBJECT_TYPE_INT;
+        tmp_cout_index++;
+    }
     | CoutParmListStmt SHL IDENT {
         Object node = lookup_symbol($<s_var>3, 0);
         if(strcmp($<s_var>3, "endl") == 0){
@@ -203,7 +253,10 @@ CoutParmListStmt
         tmp_cout[tmp_cout_index] = tmp.type;
         tmp_cout_index++;
     }
-    | SHL FunctionCallStmt
+    | SHL FunctionCallStmt {
+        tmp_cout[tmp_cout_index] = OBJECT_TYPE_INT;
+        tmp_cout_index++;
+    }
     | SHL IDENT {
         Object node = lookup_symbol($<s_var>2, 0);
         if(strcmp($<s_var>2, "endl") == 0){
@@ -257,17 +310,18 @@ decStmtWithVal : VARIABLE_T Factor VAL_ASSIGN Expression ';' {
                }
 ;
 
-ifStmt : ifHead '{' StmtList '}' { dumpScope(); }
-       | ifHead StmtList { dumpScope(); }
-       | ifElseStmt '{' StmtList '}' { dumpScope(); }
-       | ifElseStmt StmtList { dumpScope(); }
+ifStmt : ifHead '{' StmtList '}' { dumpScope(func_sig_none); }
+       | ifHead StmtList { dumpScope(func_sig_none); }
+       | ifElseStmt '{' StmtList '}' { dumpScope(func_sig_none); }
+       | ifElseStmt StmtList { dumpScope(func_sig_none); }
 ;
 
 ifElseStmt : ifHead '{' StmtList '}' ELSE { dumpSameScope(); printf("ELSE\n"); pushSameScope(); }
            | ifHead StmtList ELSE { dumpSameScope(); printf("ELSE\n"); pushSameScope(); }
+;
 
 ifHead : IF Expression { printf("IF\n"); pushScope(); } 
-       | IF FunctionOp { printf("IF\n"); pushScope(); } 
+       | IF FunctionOp { printf("IF\n"); pushScope(); }
 ;
 
 castingStmt : '(' VARIABLE_T ')' Expression %prec NOT {
@@ -300,11 +354,11 @@ castingStmt : '(' VARIABLE_T ')' Expression %prec NOT {
 
 whileStmt : { printf("WHILE\n"); } WHILE Expression {
                 pushScope();
-            } '{' StmtList '}' { dumpScope(); }
+            } '{' StmtList '}' { dumpScope(func_sig_none); }
 ;
 
 forStmt : { printf("FOR\n"); pushScope(); } forHead '{' StmtList '}' {
-            dumpScope();
+            dumpScope(func_sig_none);
         }
 ;
 
@@ -339,8 +393,9 @@ arrayDecStmt : VARIABLE_T arrayStmt VAL_ASSIGN '{' ElementList '}' ';' {
 ElementList : ElementList ',' Expression {
                 array_size += 1;
             }
-            | IDENT ',' Expression {
-                printf("hello\n");
+            | IDENT {
+                modifyVariable($<s_var>1);
+            } ',' Expression {
                 array_size += 2;
             }
             | Expression ',' Expression {
@@ -532,6 +587,9 @@ Factor  : INT_LIT {
         | STR_LIT { 
             printf("STR_LIT \"%s\"\n", $<s_var>1);
             $$.type = OBJECT_TYPE_STR;
+            $$.symbol = (SymbolData*)malloc(sizeof(SymbolData));
+            $$.symbol->name = (char*)malloc(sizeof(char)*50);
+            strcpy($$.symbol->name, $<s_var>1);
         }
         | BOOL_LIT {
             if($<b_var>1)

@@ -57,7 +57,7 @@ void pushSameScope() {
     table[scopeLevel][table_len[scopeLevel]].symbol->func_var = 0;
 }
 
-void dumpScope() {
+void dumpScope(char functionSig[][50]) {
     printf("\n> Dump symbol table (scope level: %d)\n", scopeLevel);
 
     printf("%-10s%-20s%-10s%-10s%-10s%-10s\n",
@@ -71,7 +71,7 @@ void dumpScope() {
         if( mut == -1 )
         {
             printf("%-10d%-20s%-10s%-10ld%-10d%-10s\n",
-            i, table[scopeLevel][i].symbol->name, objectTypeName[table[scopeLevel][i].type], table[scopeLevel][i].symbol->addr, table[scopeLevel][i].symbol->lineno, "([Ljava/lang/String;)I");
+            i, table[scopeLevel][i].symbol->name, objectTypeName[table[scopeLevel][i].type], table[scopeLevel][i].symbol->addr, table[scopeLevel][i].symbol->lineno, functionSig[i]);
         }     
         else 
         {
@@ -135,7 +135,7 @@ int Insert_symbol(ObjectType variableType, char* funcName) {
 
     if( variableType == OBJECT_TYPE_FUNCTION )
     {
-        table[scopeLevel][table_len[scopeLevel]].symbol->addr = address;
+        table[scopeLevel][table_len[scopeLevel]].symbol->addr = -1;
         table[scopeLevel][table_len[scopeLevel]].symbol->lineno = yylineno;
         strcpy(table[scopeLevel][table_len[scopeLevel]].symbol->name, funcName);
         table[scopeLevel][table_len[scopeLevel]].type = variableType;
@@ -158,14 +158,14 @@ int Insert_symbol(ObjectType variableType, char* funcName) {
     } else {
         // printf("current type: %d\n", variableType);
         // printf("tmp type: %s\n", objectTypeName[tmp.type]);
-        if(variableType != tmp.type) {
-            // printf("> Insert `%s` (addr: %d) to scope level %d\n", funcName, address, scopeLevel);
-            // table[scopeLevel][table_len[scopeLevel]].symbol->addr = address;
-            // table[scopeLevel][table_len[scopeLevel]].symbol->lineno = yylineno;
-            // strcpy(table[scopeLevel][table_len[scopeLevel]].symbol->name, funcName);
-            // table[scopeLevel][table_len[scopeLevel]].type = variableType;
-            // table_len[scopeLevel]++;
-            // address++;
+        if(variableType != tmp.type && tmp.symbol->addr == -1) {
+            printf("> Insert `%s` (addr: %d) to scope level %d\n", funcName, address, scopeLevel);
+            table[scopeLevel][table_len[scopeLevel]].symbol->addr = address;
+            table[scopeLevel][table_len[scopeLevel]].symbol->lineno = yylineno;
+            strcpy(table[scopeLevel][table_len[scopeLevel]].symbol->name, funcName);
+            table[scopeLevel][table_len[scopeLevel]].type = variableType;
+            table_len[scopeLevel]++;
+            address++;
         }
     }
 
